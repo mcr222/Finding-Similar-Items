@@ -4,7 +4,7 @@ import md5
 
 '''
 Hashes in text:
-    Since documents are much shorter than 2³² (32 bits hash combinations),
+    Since documents are much shorter than 2^32 (32 bits hash combinations),
     we still can be sure that a document is only a small fraction of
     the possible tokens in it's sets.
 '''
@@ -14,8 +14,8 @@ Collision of hashes:
     the same token, but that could make two documents appear to have shingles in common.
     
     But the number of different strings of length k=10 that will actually appear in
-    any document is much smaller than 26¹⁰ (26 alphabet characters) and also smaller 
-    than 256¹⁰ (256 ASCII characters).
+    any document is much smaller than 26^10 (26 alphabet characters) and also smaller 
+    than 256^10 (256 ASCII characters).
 
 '''        
         
@@ -34,12 +34,17 @@ def shingle_text(text, k):
         shingled_text.add(md5.new(''.join(gram)).hexdigest()[0:8])
     return shingled_text
 
-
+def compareSets(set1,set2):
+    return float(len(set1 & set2)) / len(set1 | set2)
+    
 
 def main():
-    text="try text"
+    text1="try text"
+    text2="hello text"
     k=3
-    shingle_text(text, k)
+    set1 = shingle_text(text1, k)
+    set2 = shingle_text(text2, k)
+    print compareSets(set1, set2)
     
     
 main()
