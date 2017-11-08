@@ -21,7 +21,7 @@ Collision of hashes:
         
 def shingle_text(text, k):
     '''
-    single_text: takes a text and partitions it in hashed (4 byte hash) shingles of length k.
+    Takes a text and partitions it in hashed (4 byte hash) shingles of length k.
         @param text: string containing the text to shingle
         @param k: length of the characters in a shingle
         @return: ordered (by input order) set containing all hashes.
@@ -34,7 +34,13 @@ def shingle_text(text, k):
         shingled_text.add(md5.new(''.join(gram)).hexdigest()[0:8])
     return shingled_text
 
+
 def compareSets(set1,set2):
+    '''
+    Returns Jaccard similarity index between the two sets
+        @param set1: first set
+        @param set2: second set
+    '''
     return float(len(set1 & set2)) / len(set1 | set2)
     
 
