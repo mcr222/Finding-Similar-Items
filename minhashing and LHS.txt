@@ -1,0 +1,100 @@
+From sets to boolean matrix:
+
+	Each element in the universal set is represented by a row of the matrix.
+	And each set in the collection is represented by a column of the matrix.
+
+	The matrix has one in the row for element E (a shingle hash )and the column for
+	S (a document represented as a set), if and only if E is a member of S.
+	Otherwise that entry is zero.
+
+Computing the Jaccard similarity with boolean columns:
+	In general, you can compute the similarity of two columns,
+	by counting the number of rows where both have one, and
+	dividing by the number of rows in which one or both have one. 
+
+MinHashing:
+	Each Minshashing hash function is associated with a permutation of
+	the rows of the matrix.
+	We don't physically permute the rows, that would take much too much time.
+	
+	The definition of the minhash function h, associated with a permutation is,
+	is that h of a column C is the number of the first row in the permuted order,
+	in which that column has 1. Different minhash functions mean different permutations of the
+	boolean matrix.
+	
+	For each column, the signature is the sequence of row numbers we
+	get when we apply each of these Minhash functions (for each permutation) in turn to the column.
+	
+	Signature matrix:
+		The columns of the signature matrix correspond to the columns of
+		the original matrix, that is, to the sets in the collection.
+		While each row in the signature matrix is the result of applying one of
+		the chosen Minhash functions to each of the columns.
+
+MinHashing property:
+	The probability (over all permutations of rows) that h(C1)=h(C2) (C1, C2 two columns representing
+	two documents) is the same as the Jaccard similarity between C1 and C2, sim(C1,C2).
+	
+	This is because the minHash will be the same if both columns have a row (1,1) on top (without considering
+	(0,0) rows), and the probability of that is the ratio of rows (1,1) vs (1,0)+(0,1)+(1,1). And this ratio
+	is the Jaccard similarity, since (1,1) are the elements that are shared between elements vs the all the elements
+	in both sets.
+	
+Similarity of Signatures:
+	The signature is the sequence of h_p1(C) h_p2(C) (for all permutations), thus the fraction of i | h_pi(C1)=h_pi(C2)
+	is the Jaccard similarity.
+	
+	Obs: turns out that when the similarity is zero it is impossible for
+	any min hash function to return the same value for these two columns. 
+	
+Implementation of MinHashing:
+	Permutations are too costly. We simulate permutations by a hash function
+	that determines the order of each row.
+	
+	For each column c, we keep a slot for each of the hash functions, that is the signature matrix. 
+	The slot for column c and the ith hash function M(i,c). 
+	Our goal is that eventually M(i,c) will become the smallest value of h_i(r) for which column c
+	has 1 in row r (previous expectation of minhash).
+	
+	Essentially we iterate over all rows, calculating all h_i per row, and during each row hashing, we
+	will keep for each column, if the column has a 1, the minimum h_i seen for all rows. 
+
+LHS:
+	The idea behind LSH is to look at the collection of elements, that is,
+	signatures in our example here, whose similar pairs we want to find and
+	without constructing all pairs of those elements, create a short list of
+	candidate pairs whose similarity actually must be measured.
+	All pairs that are not candidates are assumed not to be similar even though in
+	rare cases, there will indeed be false negative.
+	
+	A pair becomes a candidate pair if any one or
+	more of the hash functions puts both signatures in the same bucket.
+	
+	Partition into Bands:
+		Partition the signature matrix into bands, grouping in a band multiple minHashes
+		(one hash function/one permutation) for all documents. So each band takes a subvector of
+		the signature vectors for all documents. So checking "locally" if the signatures agree.
+		Bands are non intersecting subvectors (#bands*#rows_in_band = lengths_of_signature = #minHash_functions)
+		
+		Each band (signature subvector) will be hashed into k buckets for each document/set. 
+		If two documents are in the same bucket for some band, then they are candidates for similarity.
+		There's a small chance that these segments (bands of signatures) of these columns are not identical, but
+		they just happen to hash to the same bucket. We will generally neglect that probability as it can be made tiny,
+		like 1 in 4 billion, if we use 2^32 buckets.
+		
+		Notice that if most of the components of two signatures agree,
+		then there's a good chance that they will have 100% agreement in some band.
+		
+		If b=5, and each minHash has 32 bits, then the identity function to hash into buckets
+		the signature subvector (of length 5), would have 2^(32*5) buckets.
+		
+	Bands vs thershold:
+		Thus making b large is good if the similarity threshold is relatively low.
+		If you make b small and r large, then it would be very hard for two signatures to hash to the same bucket for
+		a given band and there a few bands that give them the opportunity to do so.
+		
+		
+WHY using hash functions to compare bands? Does it simplify the comparison of bands? It should.
+
+
+	
