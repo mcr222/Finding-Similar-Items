@@ -1,6 +1,7 @@
-from ordered_set import OrderedSet
 from nltk import ngrams
 import md5
+from sortedcontainers import SortedSet
+from sklearn.metrics import jaccard_similarity_score
 
 '''
 Hashes in text:
@@ -26,12 +27,12 @@ def shingle_text(text, k):
         @param k: length of the characters in a shingle
         @return: ordered (by input order) set containing all hashes.
     '''
-    shingled_text = OrderedSet()
+    shingled_text = SortedSet()
     #shingled by character (counting space as character too)
     kgram = ngrams(text,k)
     for gram in kgram:
-        #hash the shingle into a token
-        shingled_text.add(md5.new(''.join(gram)).hexdigest()[0:8])
+        #hash the shingle into a token of 4 bytes (8 hexadecimal)
+        shingled_text.add(int(md5.new(''.join(gram)).hexdigest()[0:8], 16))
     return shingled_text
 
 
@@ -42,15 +43,32 @@ def compareSets(set1,set2):
         @param set2: second set
     '''
     return float(len(set1 & set2)) / len(set1 | set2)
+
+def compareSignatures(sig1,sig2):
+    return jaccard_similarity_score(sig1, sig2);
     
+def minHashing(allSets):
+    print allSets[0].__contains__(135226654)
+    print allSets[0].__contains__(1)
+    print allSets[0] | allSets[1]
+    for value in allSets[0]:
+        print value
+
+def LHS(signature_vectors, threshold):
+    
+    print "hola"
 
 def main():
     text1="try text"
     text2="hello text"
     k=3
     set1 = shingle_text(text1, k)
+    print set1
     set2 = shingle_text(text2, k)
+    print set2
     print compareSets(set1, set2)
+    print compareSignatures([2,2,2], [2,4,2])
+    minHashing([set1,set2])
     
     
 main()
