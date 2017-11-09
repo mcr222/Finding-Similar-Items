@@ -5,24 +5,7 @@ from sortedcontainers import SortedSet
 import random
 from sklearn.metrics import jaccard_similarity_score
 import scipy.optimize as sp
-import numpy as np
-
-'''
-Hashes in text:
-    Since documents are much shorter than 2^32 (32 bits hash combinations),
-    we still can be sure that a document is only a small fraction of
-    the possible tokens in it's sets.
-'''
-'''
-Collision of hashes:
-    There's a small chance of a collision where two shingles hashed to
-    the same token, but that could make two documents appear to have shingles in common.
-    
-    But the number of different strings of length k=10 that will actually appear in
-    any document is much smaller than 26^10 (26 alphabet characters) and also smaller 
-    than 256^10 (256 ASCII characters).
-
-'''        
+import numpy as np      
         
 def shingle_text(text, k):
     '''
@@ -35,7 +18,8 @@ def shingle_text(text, k):
     #shingled by character (counting space as character too)
     kgram = ngrams(text,k)
     for gram in kgram:
-        #hash the shingle into a token of 4 bytes (8 hexadecimal)
+        #hash the shingle with md5 into a token of 4 bytes (8 hexadecimal)
+        #all the combinations of 8 hex characters are all the possible shingle hashes
         shingled_text.add(int(md5.new(''.join(gram)).hexdigest()[0:8], 16))
     return shingled_text
 
@@ -45,10 +29,17 @@ def compareSets(set1,set2):
     Returns Jaccard similarity index between the two sets
         @param set1: first set
         @param set2: second set
+        @return: ratio of items in the intersection of the sets vs all distinct items in both sets 
     '''
     return float(len(set1 & set2)) / len(set1 | set2)
 
 def compareSignatures(sig1,sig2):
+    '''
+    Compares two arrays of integers (same length) considering how many integers are equal per position
+        @param sig1: array of integers with signature
+        @param sig2: other signature to compare
+        @return: average of positions in arrays that are equal in both signatures
+    '''
     return jaccard_similarity_score(sig1, sig2);
 
 def minHashing(allSets):
@@ -94,6 +85,14 @@ def minHashing(allSets):
     return M_i_c
 
 def LHS(signature_vectors, threshold):
+    '''
+    Locality sensitive hashing, efficiently computes all pairs of documents that are, with high probability,
+    over (or very close) the similarity threshold determined. Candidates are selected 
+        @param signature_vectors: 2-dimensional array, each row contains one document's signature
+        @param threshold: double from 0 to 1, determines the similarity of the pairs that should be candidates
+                (there can be false positives, i.e. candidate pairs that their similarity is not over threshold).
+        @return: a set with all pairs of documents that are candidate to be similar with threshold determined
+    '''
     sign_length = len(signature_vectors[0])
     print "signature length: " + str(sign_length)
     print "threshold required: " + str(threshold)
@@ -104,11 +103,12 @@ def LHS(signature_vectors, threshold):
     candidate_pairs = set()
     start_idx = 0
     end_idx = r
+    #for each band in the signature we are going to hash each document
     while start_idx<sign_length:
         #print "band start: " + str(start_idx) + " band end: " + str(end_idx)
         
         #a hash with 2**32 buckets hits memory error in my laptop (2**16 is low and will
-        #probably give more false positives)
+        #probably give more false positives as there will be more collisions of hashes)
         hash_buckets = [[-1]]*(2**16)
         #print "hash buckets length " + str(len(hash_buckets))
         for doc in range(len(signature_vectors)):
@@ -119,6 +119,9 @@ def LHS(signature_vectors, threshold):
             if(hash_buckets[to_bucket][0]==-1):
                 hash_buckets[to_bucket]=[doc]
             else:
+                #if there are other documents in this bucket this means that in this band (unless hash collision)
+                #the two documents are equal, and thus they should be considered as potentially similar with threshold
+                #determined
                 for doc_in_bucket in hash_buckets[to_bucket]:
                     #one might think that pairs of doc swapped can appear in the pairs, 
                     #meaning that we would have in the candidate_pairs (1,2) and (2,1)
@@ -126,7 +129,8 @@ def LHS(signature_vectors, threshold):
                     #thus cannot generate (2,1).
                     candidate_pairs.add((doc_in_bucket,doc))
                 hash_buckets[to_bucket].append(doc)
-    
+                
+        #this takes care that the last bucket does not go over the end of the signature length
         start_idx = start_idx+r
         end_idx = end_idx +r
         if(end_idx> sign_length):
