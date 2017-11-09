@@ -5,6 +5,7 @@ from sortedcontainers import SortedSet
 import random
 from sklearn.metrics import jaccard_similarity_score
 import scipy.optimize as sp
+import numpy as np
 
 '''
 Hashes in text:
@@ -90,19 +91,31 @@ def minHashing(allSets):
         i+=1
 
     print M_i_c
+    return M_i_c
 
 def LHS(signature_vectors, threshold):
     sign_length = len(signature_vectors[0])
+    print "signature length: " + str(sign_length)
+    print "threshold required: " + str(threshold)
     root_res = sp.root(lambda r: (r/sign_length)**(1/r)-threshold, 2)
     #beware that r might not divide exactly sign_length (last band might be smaller than r)
     r = int(root_res['x'][0])
+    print "number of rows: " + str(r)
     candidate_pairs = set()
-    index = 0
-    while index<sign_length:
-        hash_buckets = np.full((2^32,1),-1)
+    start_idx = 0
+    end_idx = r
+    while start_idx<sign_length:
+        print "band start: " + str(start_idx) + " band end: " + str(end_idx)
+        #a hash with 2**32 buckets hits memory error in my laptop (2**16 is low and will
+        #probably give more false positives)
+        hash_buckets = [[-1]]*(2**16)
+        #print "hash buckets length " + str(len(hash_buckets))
         for doc in range(len(signature_vectors)):
-            to_bucket = int(md5.new(''.join(gram)).hexdigest()[0:8], 16)
-            if(hash_buckets[to_bucket]==-1):
+            # note that with this: str(signature_vectors[doc][start_idx:end_idx]))
+            # we get a string like: [11,23] (instead of 1123), as the hash is a random function,
+            #and equality is maintained this approach works.
+            to_bucket = int(md5.new(''.join(str(signature_vectors[doc][start_idx:end_idx]))).hexdigest()[0:4], 16)
+            if(hash_buckets[to_bucket][0]==-1):
                 hash_buckets[to_bucket]=[doc]
             else:
                 for doc_in_bucket in hash_buckets[to_bucket]:
@@ -112,6 +125,12 @@ def LHS(signature_vectors, threshold):
                     #thus cannot generate (2,1).
                     candidate_pairs.add((doc_in_bucket,doc))
                 hash_buckets[to_bucket].append(doc)
+    
+        start_idx = start_idx+r
+        end_idx = end_idx +r
+        if(end_idx> sign_length):
+            end_idx = sign_length
+            
                 
     print candidate_pairs
     return candidate_pairs
@@ -127,7 +146,14 @@ def main():
     print set2
     print compareSets(set1, set2)
     print compareSignatures([2,2,2], [2,4,2])
-    minHashing([set1,set2])
+    #we transpose to have the signatures of each document in a single array
+    signature_matrix = np.array(minHashing([set1,set2])).T
+    print signature_matrix
+    print len(signature_matrix)
+    print len(signature_matrix[0])
+    LHS(signature_matrix, 0.1)
 
-    
 main()
+
+
+
