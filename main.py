@@ -93,16 +93,18 @@ def LHS(signature_vectors, threshold):
 
     print "hola"
 
+
 def main():
     text1="try text"
     text2="hello text"
     k=3
     set1 = shingle_text(text1, k)
-    set2 = shingle_text(text2, k)
     print set1
+    set2 = shingle_text(text2, k)
     print set2
     print compareSets(set1, set2)
     print compareSignatures([2,2,2], [2,4,2])
     minHashing([set1,set2])
 
+    
 main()
