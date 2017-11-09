@@ -74,13 +74,19 @@ LHS:
 		Partition the signature matrix into bands, grouping in a band multiple minHashes
 		(one hash function/one permutation) for all documents. So each band takes a subvector of
 		the signature vectors for all documents. So checking "locally" if the signatures agree.
-		Bands are non intersecting subvectors (#bands*#rows_in_band = lengths_of_signature = #minHash_functions)
+		Bands are non-intersecting subvectors (#bands*#rows_in_band = lengths_of_signature = #minHash_functions)
 		
 		Each band (signature subvector) will be hashed into k buckets for each document/set. 
 		If two documents are in the same bucket for some band, then they are candidates for similarity.
 		There's a small chance that these segments (bands of signatures) of these columns are not identical, but
 		they just happen to hash to the same bucket. We will generally neglect that probability as it can be made tiny,
 		like 1 in 4 billion, if we use 2^32 buckets.
+		
+		We can use the same hash function for all the bands, but we
+		use a separate bucket array for each band, so columns with the same vector in
+		different bands will not hash to the same bucket.
+		
+		In a sense, hashing bands independently is like having a set of different hash functions.
 		
 		Notice that if most of the components of two signatures agree,
 		then there's a good chance that they will have 100% agreement in some band.
@@ -95,6 +101,10 @@ LHS:
 		
 		
 WHY using hash functions to compare bands? Does it simplify the comparison of bands? It should.
+Instead of comparing two by two the elements, all are them are put in a vector, and if they fall in the same
+bucket then they are equal (if using the identity as hash function). The hash function (other than the identity)
+is used to reduce the number of buckets.
+
 
 
 	
