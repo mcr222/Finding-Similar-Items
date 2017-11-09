@@ -105,7 +105,8 @@ def LHS(signature_vectors, threshold):
     start_idx = 0
     end_idx = r
     while start_idx<sign_length:
-        print "band start: " + str(start_idx) + " band end: " + str(end_idx)
+        #print "band start: " + str(start_idx) + " band end: " + str(end_idx)
+        
         #a hash with 2**32 buckets hits memory error in my laptop (2**16 is low and will
         #probably give more false positives)
         hash_buckets = [[-1]]*(2**16)
@@ -137,7 +138,7 @@ def LHS(signature_vectors, threshold):
 
 
 def main():
-    text1="try text"
+    text1="hel text"
     text2="hello text"
     k=3
     set1 = shingle_text(text1, k)
@@ -149,9 +150,10 @@ def main():
     #we transpose to have the signatures of each document in a single array
     signature_matrix = np.array(minHashing([set1,set2])).T
     print signature_matrix
-    print len(signature_matrix)
-    print len(signature_matrix[0])
-    LHS(signature_matrix, 0.1)
+    print "number of documents: " + str(len(signature_matrix))
+    print "number of hashes in each signature: " + str(len(signature_matrix[0]))
+    print "signature similarity: " + str(compareSignatures(signature_matrix[0], signature_matrix[1]))
+    LHS(signature_matrix, 0.5)
 
 main()
 
