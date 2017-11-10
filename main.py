@@ -23,7 +23,6 @@ def shingle_text(text, k):
         shingled_text.add(int(md5.new(''.join(gram)).hexdigest()[0:8], 16))
     return shingled_text
 
-
 def compareSets(set1,set2):
     '''
     Returns Jaccard similarity index between the two sets.
@@ -40,9 +39,10 @@ def compareSignatures(sig1,sig2):
         @param sig2: other signature to compare
         @return: average of positions in arrays that are equal in both signatures
     '''
+    #jaccard similarity in sklearn.metrics uses the definition of position comparison between signatures
+    #see http://scikit-learn.org/stable/modules/model_evaluation.html#jaccard-similarity-score
+    #Thus it is a different metric than the one used in compareSets(.,.)
     return jaccard_similarity_score(sig1, sig2);
-
-
 
 def minHashing(allSets):
     '''
@@ -53,11 +53,12 @@ def minHashing(allSets):
 
     print "Computing MinHash"
     #Union of all the shingle hashes that we have in the sets
+    #Note that we only have to operate over them as the other rows/hashes will be 0 for all documents
     U = SortedSet()
     for i in range(0,len(allSets)):
         U |= allSets[i]
 
-   #Generation of 100 hash functions
+    #Generation of 100 hash functions
     totalFunctions = 100
     #to avoid collisions we make the number of buckets in the hash (determined by mod) very big.
     #Ideally, we would make this number larger than 2^32 (number of shingle hashes), but in order to
@@ -75,7 +76,7 @@ def minHashing(allSets):
             return (a*x +b)%mod
         functions.append(func1)
 
-   #Min hash algorithm
+    #Min hash algorithm
     'Initialization--------------------------------------------'
     M_i_c = [[float("inf")] * len(allSets) for i in range(totalFunctions)]
     i = 1
@@ -130,7 +131,7 @@ def LSH(signature_vectors, threshold):
         for doc in range(len(signature_vectors)):
             # note that with this: str(signature_vectors[doc][start_idx:end_idx]))
             # we get a string like: [11,23] (instead of 1123), as the hash is a random function,
-            #and equality is maintained this approach works.
+            # and equality is maintained this approach works.
             to_bucket = int(md5.new(''.join(str(signature_vectors[doc][start_idx:end_idx]))).hexdigest()[0:4], 16)
             if(hash_buckets[to_bucket][0]==-1):
                 hash_buckets[to_bucket]=[doc]
@@ -154,7 +155,6 @@ def LSH(signature_vectors, threshold):
 
     print "Finished computing LSH"
     return candidate_pairs
-
 
 def main(t=0.8):
     #we set the shingle length to most used value for documents
@@ -192,14 +192,18 @@ def main(t=0.8):
         print candidate_pairs
         similar_pairs = []
         for pair in candidate_pairs:
+            #instead of comparing signatures here we could compare shingle sets or even the documents themselves.
+            #we would spend more resources but avoid more false positives
             if(compareSignatures(signature_matrix[pair[0]], signature_matrix[pair[1]])):
                 similar_pairs.append(pair)
                 
         print "Pairs that are similar with threshold " + str(t) + " (although there can be some false negatives and positives)"
         print similar_pairs
 
-
-main(float(sys.argv[1]))
+try:
+    main(float(sys.argv[1]))
+except:
+    main()
 
 
 
