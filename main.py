@@ -2,7 +2,7 @@ from nltk import ngrams
 import md5
 from sortedcontainers import SortedSet
 import random
-from sklearn.metrics import jaccard_similarity_score
+#from sklearn.metrics import jaccard_similarity_score
 
 '''
 Hashes in text:
@@ -45,9 +45,15 @@ def compareSets(set1,set2):
     '''
     return float(len(set1 & set2)) / len(set1 | set2)
 
-def compareSignatures(sig1,sig2):
-    return jaccard_similarity_score(sig1, sig2);
+#def compareSignatures(sig1,sig2):
+    #return jaccard_similarity_score(sig1, sig2);
 
+
+'''
+    Builds a minhash signature for all the entry sets. 
+        @param allSets - a set of document's shingle sets
+        @return: a matrix containing the minhash signature of each document (each column represents one document).
+'''
 def minHashing(allSets):
 
     #Union of all the hashes
@@ -57,12 +63,12 @@ def minHashing(allSets):
 
    #Generation of 100 hash functions
     totalFunctions = 100
-    div = 1000000
+    div = 10967819 #Prime number bigger than 1'000.000. Other options: 2724299, 3770953, 4311301.
     functions = []
     for i in range(0,totalFunctions):
         def func1(x):
-            a = random.randint(1,1000)
-            b = random.randint(1,1000)
+            a = random.randint(1,totalFunctions)
+            b = random.randint(1,totalFunctions)
             return (a*x +b)%div
         functions.append(func1)
 
@@ -71,6 +77,7 @@ def minHashing(allSets):
     M_i_c = [[float("inf")] * len(allSets) for i in range(totalFunctions)]
     i = 1
 
+    #Iterates over the union of all shingles' hashes
     for u in U:
         h_r = []
         #We calculate the hash functions for the specific row
@@ -80,7 +87,7 @@ def minHashing(allSets):
         c_cont = 0
         #We iterate over the columns
         for c in allSets:
-            if(c.__contains__(u)):
+            if(c.__contains__(u)): #If the column contains the value u
                 for hh in range(0,len(functions)):
                     if(h_r[hh]<M_i_c[hh][c_cont]):
                         M_i_c[hh][c_cont] = h_r[hh]
@@ -88,6 +95,7 @@ def minHashing(allSets):
         i+=1
 
     print M_i_c
+    return M_i_c
 
 def LHS(signature_vectors, threshold):
 
@@ -103,7 +111,7 @@ def main():
     set2 = shingle_text(text2, k)
     print set2
     print compareSets(set1, set2)
-    print compareSignatures([2,2,2], [2,4,2])
+    #print compareSignatures([2,2,2], [2,4,2])
     minHashing([set1,set2])
 
     
