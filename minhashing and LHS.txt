@@ -31,6 +31,19 @@ MinHashing:
 		While each row in the signature matrix is the result of applying one of
 		the chosen Minhash functions to each of the columns.
 
+	Collision of hashes when shingling:
+	    There's a small chance of a collision where two shingles hashed to
+	    the same token, but that could make two documents appear to have shingles in common.
+	    
+	    But the number of different strings of length k=10 that will actually appear in
+	    any document is much smaller than 26^10 (26 alphabet characters) and also smaller 
+	    than 256^10 (256 ASCII characters).
+
+	Hashes in text:
+	    Since documents are much shorter than 2^32 (32 bits hash combinations),
+	    we still can be sure that a document is only a small fraction of
+	    the possible tokens in it's sets.
+
 MinHashing property:
 	The probability (over all permutations of rows) that h(C1)=h(C2) (C1, C2 two columns representing
 	two documents) is the same as the Jaccard similarity between C1 and C2, sim(C1,C2).
@@ -74,7 +87,7 @@ LHS:
 		Partition the signature matrix into bands, grouping in a band multiple minHashes
 		(one hash function/one permutation) for all documents. So each band takes a subvector of
 		the signature vectors for all documents. So checking "locally" if the signatures agree.
-		Bands are non intersecting subvectors (#bands*#rows_in_band = lengths_of_signature = #minHash_functions)
+		Bands are non-intersecting subvectors (#bands*#rows_in_band = lengths_of_signature = #minHash_functions)
 		
 		Each band (signature subvector) will be hashed into k buckets for each document/set. 
 		If two documents are in the same bucket for some band, then they are candidates for similarity.
@@ -82,19 +95,36 @@ LHS:
 		they just happen to hash to the same bucket. We will generally neglect that probability as it can be made tiny,
 		like 1 in 4 billion, if we use 2^32 buckets.
 		
+		We can use the same hash function for all the bands, but we
+		use a separate bucket array for each band, so columns with the same vector in
+		different bands will not hash to the same bucket.
+		
+		In a sense, hashing bands independently is like having a set of different hash functions.
+		
 		Notice that if most of the components of two signatures agree,
 		then there's a good chance that they will have 100% agreement in some band.
 		
 		If b=5, and each minHash has 32 bits, then the identity function to hash into buckets
 		the signature subvector (of length 5), would have 2^(32*5) buckets.
 		
-	Bands vs thershold:
+	Bands vs threshold:
 		Thus making b large is good if the similarity threshold is relatively low.
 		If you make b small and r large, then it would be very hard for two signatures to hash to the same bucket for
 		a given band and there a few bands that give them the opportunity to do so.
 		
+		Given s the similarity between two documents, the probability of sharing one bucket (meaning
+		that all rows in that band are equal, or that there is a collision in the hash function, which we don't consider)
+		is: 1-(probability of all bands being different) = 1-(prob. of one band being different)^b = 
+		1-(1-(probability of one band being all equal))^b = 1-(1-s^r)^b, that has a threshold of t~(1/b)^(1/r)
+		The amount of false positives is related to this probability and the actual distribution of the similarities
+		between all documents (for example if we have a lot of documents with similarity 0.79, and the threshold is
+		0.8, we will have a lot of false positives).
 		
 WHY using hash functions to compare bands? Does it simplify the comparison of bands? It should.
+Instead of comparing two by two the elements, all are them are put in a vector, and if they fall in the same
+bucket then they are equal (if using the identity as hash function for instance). The hash function (other than the identity)
+is used to reduce the number of buckets.
+
 
 
 	
