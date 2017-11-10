@@ -42,12 +42,13 @@ def compareSignatures(sig1,sig2):
     return jaccard_similarity_score(sig1, sig2);
 
 
-'''
-    Builds a minhash signature for all the entry sets. 
-        @param allSets - a set of document's shingle sets
-        @return: a matrix containing the minhash signature of each document (each column represents one document).
-'''
+
 def minHashing(allSets):
+    '''
+        Builds a minhash signature for all the entry sets.
+            @param allSets - a set of document's shingle sets
+            @return: a matrix containing the minhash signature of each document (each column represents one document).
+    '''
 
     #Union of all the hashes
     U = SortedSet()
