@@ -15,6 +15,7 @@ def shingle_text(text, k):
         @return: ordered (by input order) set containing all hashes.
     '''
     shingled_text = SortedSet()
+    text=text.replace("\n",'').replace("\r",'')
     #shingled by character (counting space as character too)
     kgram = ngrams(text,k)
     for gram in kgram:
